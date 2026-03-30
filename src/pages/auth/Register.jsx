@@ -64,6 +64,7 @@ const Register = () => {
       })
       navigate("/login")
     } catch (err) {
+      console.error("Registration Error:", err)
       setError(err.response?.data?.error || "Registration failed. Please try again.")
     }
   }

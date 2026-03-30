@@ -35,6 +35,7 @@ const Login = () => {
       localStorage.setItem("user", JSON.stringify(response.data.user))
       navigate("/dashboard")
     } catch (err) {
+      console.error("Login Error:", err)
       setError(err.response?.data?.error || "Login failed. Please try again.")
     }
   }
