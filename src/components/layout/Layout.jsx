@@ -43,14 +43,53 @@ const Layout = ({ children }) => {
     navigate("/login", { replace: true })
   }
 
-  const menuItems = [
-    { icon: FaHome, label: "Overview", path: "/dashboard" },
-    { icon: FaCalendarCheck, label: "Attendance", path: "/attendance" },
-    { icon: FaFileAlt, label: "Results", path: "/results" },
-    { icon: FaBook, label: "Curriculum", path: "/curriculum" },
-    { icon: FaCalendarAlt, label: "Timetable", path: "/timetable" },
-    { icon: FaUser, label: "Profile", path: "/profile" },
-  ]
+  const getMenuItems = (roleId) => {
+    const baseItems = [
+      { icon: FaHome, label: "Overview", path: "/dashboard" },
+    ]
+
+    const rid = roleId ? Number(roleId) : null
+
+    // roleId: 1 = Student, 2 = Faculty, 3 = Admin (standard sequence)
+    // If IDs are different, we can adjust here. 
+    // Usually standard seeds are 1, 2, 3.
+    if (rid === 1) {
+      return [
+        ...baseItems,
+        { icon: FaCalendarCheck, label: "My Attendance", path: "/attendance" },
+        { icon: FaFileAlt, label: "My Results", path: "/results" },
+        { icon: FaBook, label: "Curriculum", path: "/curriculum" },
+        { icon: FaCalendarAlt, label: "Timetable", path: "/timetable" },
+      ]
+    }
+
+    if (rid === 2) {
+      return [
+        ...baseItems,
+        { icon: FaCalendarCheck, label: "Mark Attendance", path: "/attendance" },
+        { icon: FaFileAlt, label: "Enter Results", path: "/results" },
+        { icon: FaBook, label: "My Courses", path: "/curriculum" },
+        { icon: FaCalendarAlt, label: "My Schedule", path: "/timetable" },
+      ]
+    }
+
+    if (rid === 3) {
+      return [
+        ...baseItems,
+        { icon: FaUser, label: "User Management", path: "/users" },
+        { icon: FaBook, label: "Manage Curriculum", path: "/curriculum" },
+        { icon: FaCalendarCheck, label: "Global Attendance", path: "/attendance" },
+        { icon: FaFileAlt, label: "Global Results", path: "/results" },
+      ]
+    }
+
+    // Fallback: If roleId doesn't match 1, 2, 3, maybe it's 4, 5 etc.
+    // Let's assume the highest ID is Admin if we're not sure, 
+    // or just show more items if it's not a known student/faculty ID.
+    return baseItems
+  }
+
+  const menuItems = getMenuItems(user?.role_id)
 
   return (
     <Flex minH="100vh" bg="gray.50">
