@@ -1,7 +1,8 @@
-import { Box, Flex, Grid, GridItem, Heading, Icon, Stack, Text, Card, Progress, Badge, Separator, Button, Link as ChakraLink } from "@chakra-ui/react"
+import { Box, Flex, Grid, GridItem, Heading, Icon, Stack, Text, Card, Progress, Badge, Separator, Button, Link as ChakraLink, Spinner } from "@chakra-ui/react"
 import { FaGraduationCap, FaCalendarCheck, FaClock, FaBookReader, FaChevronRight, FaTrophy, FaChalkboardTeacher, FaUserCheck, FaClipboardList, FaChartLine, FaTasks, FaUniversity, FaBuilding, FaUsersCog, FaShieldAlt, FaDatabase } from "react-icons/fa"
 import Layout from "../components/layout/Layout"
 import { useState, useEffect } from "react"
+import api from "../api/axios"
 
 const StudentDashboard = ({ user }) => {
   const stats = [
@@ -152,32 +153,51 @@ const StudentDashboard = ({ user }) => {
 }
 
 const FacultyDashboard = ({ user }) => {
+  const [statsData, setStatsData] = useState(null)
+  const [schedule, setSchedule] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchFacultyData = async () => {
+      try {
+        const [statsRes, scheduleRes] = await Promise.all([
+          api.get(`/faculty/${user.faculty_id}/stats`),
+          api.get(`/faculty/${user.faculty_id}/schedule`)
+        ])
+        setStatsData(statsRes.data)
+        setSchedule(scheduleRes.data)
+      } catch (err) {
+        console.error("Error fetching faculty dashboard data:", err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    if (user.faculty_id) fetchFacultyData()
+  }, [user.faculty_id])
+
   const stats = [
-    { label: "Active Courses", value: "4", icon: FaChalkboardTeacher, color: "blue.500", trend: "2026 Spr" },
-    { label: "Student Reach", value: "450", icon: FaUserCheck, color: "green.500", trend: "Total" },
-    { label: "Pending Marks", value: "12", icon: FaClipboardList, color: "orange.500", trend: "Due Fri" },
-    { label: "Avg Attendance", value: "88%", icon: FaChartLine, color: "purple.500", trend: "+2%" },
+    { label: "Total Courses", value: statsData?.totalCourses || "0", icon: FaChalkboardTeacher, color: "blue.500", trend: "2026 Spr" },
+    { label: "Total Students", value: statsData?.totalStudents || "0", icon: FaUserCheck, color: "green.500", trend: "Active" },
+    { label: "Classes Today", value: statsData?.classesToday || "0", icon: FaClock, color: "orange.500", trend: "Next: 09:00 AM" },
+    { label: "Pending Evaluations", value: statsData?.pendingEvaluations || "0", icon: FaClipboardList, color: "purple.500", trend: "Due Fri" },
   ]
 
-  const teachingSchedule = [
-    { subject: "Operating Systems", time: "09:00 AM", room: "Room 102", type: "Lecture", students: 120 },
-    { subject: "Database Lab", time: "01:30 PM", room: "Lab 3", type: "Practical", students: 60 },
+  const recentActivity = [
+    { title: "Marks updated for DBMS", date: "2 hours ago", type: "Update", color: "blue" },
+    { title: "Attendance marked for AI class", date: "4 hours ago", type: "Attendance", color: "green" },
+    { title: "New assignment uploaded", date: "Yesterday", type: "Content", color: "purple" },
   ]
 
-  const facultyTasks = [
-    { title: "Upload Mid-Sem Results", due: "2 days", status: "High Priority", color: "red" },
-    { title: "Approve Attendance Excuses", due: "Tomorrow", status: "Action Required", color: "orange" },
-    { title: "Review Curriculum Update", due: "Next week", status: "Pending", color: "blue" },
-  ]
+  if (loading) return <Flex justify="center" align="center" h="400px"><Spinner size="xl" color="blue.500" /></Flex>
 
   return (
     <Stack gap={8}>
       <Flex align="center" justify="space-between">
         <Box>
           <Heading size="lg" fontWeight="bold">Faculty Dashboard</Heading>
-          <Text color="gray.500">Welcome, Professor {user?.username}. Here's your teaching schedule.</Text>
+          <Text color="gray.500">Welcome, Professor {user?.username}. Here's your teaching summary.</Text>
         </Box>
-        <Button colorPalette="blue" leftIcon={<FaTasks />}>Create Class Session</Button>
+        <Button colorPalette="blue" leftIcon={<FaTasks />}>Start New Session</Button>
       </Flex>
 
       <Grid templateColumns={{ base: "repeat(1, 1fr)", md: "repeat(2, 1fr)", lg: "repeat(4, 1fr)" }} gap={6}>
@@ -205,28 +225,33 @@ const FacultyDashboard = ({ user }) => {
         <GridItem colSpan={{ base: 1, lg: 2 }}>
           <Card.Root h="full" boxShadow="sm" border="1px solid" borderColor="gray.100">
             <Card.Header p={6} pb={0}>
-              <Heading size="md">Today's Teaching Schedule</Heading>
+              <Flex justify="space-between" align="center">
+                <Heading size="md">Today's Schedule</Heading>
+                <ChakraLink color="blue.600" fontSize="sm" fontWeight="bold">View Timetable <Icon as={FaChevronRight} ml={1} /></ChakraLink>
+              </Flex>
             </Card.Header>
             <Card.Body p={6}>
               <Stack gap={4}>
-                {teachingSchedule.map((cls, idx) => (
-                  <Box key={idx} p={4} borderRadius="xl" border="1px solid" borderColor="gray.100">
+                {schedule.length > 0 ? schedule.map((cls, idx) => (
+                  <Box key={idx} p={4} borderRadius="xl" border="1px solid" borderColor="gray.100" _hover={{ bg: "gray.50", cursor: "pointer" }} transition="all 0.2s">
                     <Flex align="center">
                       <Box w="60px" textAlign="center" borderRight="2px solid" borderColor="blue.100" mr={4}>
-                        <Text fontWeight="bold" fontSize="sm">{cls.time.split(' ')[0]}</Text>
-                        <Text fontSize="xs" color="gray.500">{cls.time.split(' ')[1]}</Text>
+                        <Text fontWeight="bold" fontSize="sm">{cls.start_time.split(':')[0]}:{cls.start_time.split(':')[1]}</Text>
+                        <Text fontSize="xs" color="gray.500">{parseInt(cls.start_time.split(':')[0]) >= 12 ? 'PM' : 'AM'}</Text>
                       </Box>
                       <Box flex="1">
                         <Text fontWeight="bold">{cls.subject}</Text>
                         <Flex align="center" mt={1}>
-                          <Badge size="xs" colorPalette="blue" mr={2}>{cls.type}</Badge>
-                          <Text fontSize="xs" color="gray.500">{cls.room} • {cls.students} Students</Text>
+                          <Badge size="xs" colorPalette="blue" mr={2}>Section {cls.section}</Badge>
+                          <Text fontSize="xs" color="gray.500">Room: {cls.room || 'TBA'} • Sem {cls.semester}</Text>
                         </Flex>
                       </Box>
                       <Button size="sm" variant="subtle" colorPalette="green" ml={4}>Mark Attendance</Button>
                     </Flex>
                   </Box>
-                ))}
+                )) : (
+                  <Text color="gray.500" textAlign="center" py={10}>No classes scheduled for today.</Text>
+                )}
               </Stack>
             </Card.Body>
           </Card.Root>
@@ -235,25 +260,26 @@ const FacultyDashboard = ({ user }) => {
         <GridItem>
           <Card.Root h="full" boxShadow="sm" border="1px solid" borderColor="gray.100">
             <Card.Header p={6} pb={0}>
-              <Heading size="md">Pending Actions</Heading>
+              <Heading size="md">Recent Activity</Heading>
             </Card.Header>
             <Card.Body p={6}>
               <Stack gap={4}>
-                {facultyTasks.map((task, idx) => (
+                {recentActivity.map((activity, idx) => (
                   <Box key={idx}>
                     <Flex align="center">
-                      <Box w="8px" h="8px" borderRadius="full" bg={`${task.color}.500`} mr={3} />
+                      <Box w="8px" h="8px" borderRadius="full" bg={`${activity.color}.500`} mr={3} />
                       <Box flex="1">
-                        <Text fontSize="sm" fontWeight="bold">{task.title}</Text>
+                        <Text fontSize="sm" fontWeight="bold">{activity.title}</Text>
                         <Flex justify="space-between">
-                          <Text fontSize="xs" color="gray.500">Due {task.due}</Text>
-                          <Text fontSize="xs" color={`${task.color}.600`} fontWeight="medium">{task.status}</Text>
+                          <Text fontSize="xs" color="gray.500">{activity.type}</Text>
+                          <Text fontSize="xs" color="gray.400">{activity.date}</Text>
                         </Flex>
                       </Box>
                     </Flex>
-                    {idx < facultyTasks.length - 1 && <Separator mt={3} />}
+                    {idx < recentActivity.length - 1 && <Separator mt={3} />}
                   </Box>
                 ))}
+                <Button variant="ghost" size="sm" colorPalette="blue" w="full" mt={2}>View All Activity</Button>
               </Stack>
             </Card.Body>
           </Card.Root>
@@ -383,14 +409,15 @@ const Dashboard = () => {
   if (!user) return <Layout>Loading...</Layout>
 
   const rid = user.role_id ? Number(user.role_id) : null
+  const isFaculty = user.faculty_id !== null && user.faculty_id !== undefined
+  const isStudent = user.student_id !== null && user.student_id !== undefined
 
   return (
     <Layout>
-      {rid === 1 && <StudentDashboard user={user} />}
-      {rid === 2 && <FacultyDashboard user={user} />}
-      {rid === 3 && <AdminDashboard user={user} />}
-      {!rid && <Text>No role assigned. Please contact support.</Text>}
-      {rid && ![1, 2, 3].includes(rid) && <Text>Unknown role ID: {rid}. Please contact support.</Text>}
+      {isStudent && <StudentDashboard user={user} />}
+      {isFaculty && !isStudent && <FacultyDashboard user={user} />}
+      {!isStudent && !isFaculty && rid === 3 && <AdminDashboard user={user} />}
+      {!isStudent && !isFaculty && rid !== 3 && <Text>Access Denied. Please contact support.</Text>}
     </Layout>
   )
 }

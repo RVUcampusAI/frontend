@@ -5,6 +5,8 @@ import Dashboard from "./pages/Dashboard"
 import Attendance from "./pages/Attendance"
 import Results from "./pages/Results"
 import Curriculum from "./pages/Curriculum"
+import Timetable from "./pages/Timetable"
+import Students from "./pages/Students"
 import ProtectedRoute from "./components/auth/ProtectedRoute"
 
 function App() {
@@ -21,6 +23,8 @@ function App() {
           <Route path="/attendance" element={<Attendance />} />
           <Route path="/results" element={<Results />} />
           <Route path="/curriculum" element={<Curriculum />} />
+          <Route path="/timetable" element={<Timetable />} />
+          <Route path="/students" element={<Students />} />
         </Route>
 
         {/* Default Redirect */}

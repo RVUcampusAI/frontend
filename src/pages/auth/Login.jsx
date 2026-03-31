@@ -30,12 +30,19 @@ const Login = () => {
     e.preventDefault()
     setError("")
     try {
+      console.log("Attempting login for:", formData.email);
       const response = await api.post("/auth/login", formData)
+      console.log("Login successful, response data:", response.data);
       localStorage.setItem("token", response.data.token)
       localStorage.setItem("user", JSON.stringify(response.data.user))
+      console.log("User stored in localStorage, navigating to dashboard...");
       navigate("/dashboard")
     } catch (err) {
-      console.error("Login Error:", err)
+      console.error("❌ Login Page Error:", err)
+      if (err.response) {
+        console.error("Error response data:", err.response.data);
+        console.error("Error response status:", err.response.status);
+      }
       setError(err.response?.data?.error || "Login failed. Please try again.")
     }
   }

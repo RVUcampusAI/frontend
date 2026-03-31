@@ -43,17 +43,18 @@ const Layout = ({ children }) => {
     navigate("/login", { replace: true })
   }
 
-  const getMenuItems = (roleId) => {
+  const getMenuItems = (user) => {
     const baseItems = [
       { icon: FaHome, label: "Overview", path: "/dashboard" },
     ]
 
-    const rid = roleId ? Number(roleId) : null
+    if (!user) return baseItems
 
-    // roleId: 1 = Student, 2 = Faculty, 3 = Admin (standard sequence)
-    // If IDs are different, we can adjust here. 
-    // Usually standard seeds are 1, 2, 3.
-    if (rid === 1) {
+    const isFaculty = user.faculty_id !== null && user.faculty_id !== undefined
+    const isStudent = user.student_id !== null && user.student_id !== undefined
+    const rid = user.role_id ? Number(user.role_id) : null
+
+    if (isStudent) {
       return [
         ...baseItems,
         { icon: FaCalendarCheck, label: "My Attendance", path: "/attendance" },
@@ -63,13 +64,14 @@ const Layout = ({ children }) => {
       ]
     }
 
-    if (rid === 2) {
+    if (isFaculty) {
       return [
         ...baseItems,
-        { icon: FaCalendarCheck, label: "Mark Attendance", path: "/attendance" },
-        { icon: FaFileAlt, label: "Enter Results", path: "/results" },
         { icon: FaBook, label: "My Courses", path: "/curriculum" },
-        { icon: FaCalendarAlt, label: "My Schedule", path: "/timetable" },
+        { icon: FaCalendarAlt, label: "Timetable", path: "/timetable" },
+        { icon: FaUser, label: "Students", path: "/students" },
+        { icon: FaCalendarCheck, label: "Attendance", path: "/attendance" },
+        { icon: FaFileAlt, label: "Exams & Marks", path: "/results" },
       ]
     }
 
@@ -83,13 +85,10 @@ const Layout = ({ children }) => {
       ]
     }
 
-    // Fallback: If roleId doesn't match 1, 2, 3, maybe it's 4, 5 etc.
-    // Let's assume the highest ID is Admin if we're not sure, 
-    // or just show more items if it's not a known student/faculty ID.
     return baseItems
   }
 
-  const menuItems = getMenuItems(user?.role_id)
+  const menuItems = getMenuItems(user)
 
   return (
     <Flex minH="100vh" bg="gray.50">

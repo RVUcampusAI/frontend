@@ -170,10 +170,14 @@ const Attendance = () => {
 
   if (!user) return <Layout>Loading...</Layout>
 
+  const rid = user.role_id ? Number(user.role_id) : null
+  const isFaculty = user.faculty_id !== null && user.faculty_id !== undefined
+  const isStudent = user.student_id !== null && user.student_id !== undefined
+
   return (
     <Layout>
-      {user.role_id === 1 && <StudentAttendance user={user} />}
-      {(user.role_id === 2 || user.role_id === 3) && <FacultyAttendance user={user} />}
+      {isStudent && <StudentAttendance user={user} />}
+      {(isFaculty || rid === 3) && <FacultyAttendance user={user} />}
     </Layout>
   )
 }

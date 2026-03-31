@@ -1,7 +1,8 @@
 import Layout from "../components/layout/Layout"
-import { Heading, Text, Stack, Box, Flex, Grid, Card, Badge, Table, Button, Icon, Separator } from "@chakra-ui/react"
+import { Heading, Text, Stack, Box, Flex, Grid, Card, Badge, Table, Button, Icon, Separator, Spinner } from "@chakra-ui/react"
 import { FaBook, FaPlus, FaEdit, FaTrash, FaSearch, FaLayerGroup } from "react-icons/fa"
 import { useState, useEffect } from "react"
+import api from "../api/axios"
 
 const StudentCurriculum = ({ user }) => {
   const currentCourses = [
@@ -120,6 +121,62 @@ const AdminCurriculum = ({ user }) => {
   )
 }
 
+const FacultyCurriculum = ({ user }) => {
+  const [courses, setCourses] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        const res = await api.get(`/faculty/${user.faculty_id}/courses`)
+        setCourses(res.data)
+      } catch (err) {
+        console.error("Error fetching faculty courses:", err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    if (user.faculty_id) fetchCourses()
+  }, [user.faculty_id])
+
+  if (loading) return <Flex justify="center" align="center" h="400px"><Spinner size="xl" color="blue.500" /></Flex>
+
+  return (
+    <Stack gap={8}>
+      <Box>
+        <Heading size="lg">My Courses</Heading>
+        <Text color="gray.500">Manage your course offerings and view student enrollments.</Text>
+      </Box>
+
+      <Grid templateColumns={{ base: "repeat(1, 1fr)", md: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" }} gap={6}>
+        {courses.length > 0 ? courses.map((course, idx) => (
+          <Card.Root key={idx} border="1px solid" borderColor="gray.100" _hover={{ shadow: "md", transform: "translateY(-2px)" }} transition="all 0.2s" cursor="pointer">
+            <Card.Body p={6}>
+              <Badge colorPalette="blue" mb={3}>Semester {course.semester}</Badge>
+              <Heading size="md" mb={2}>{course.name}</Heading>
+              <Text fontSize="sm" color="gray.500" mb={4}>Section {course.section} • {course.code}</Text>
+              
+              <Separator mb={4} />
+              
+              <Flex justify="space-between" align="center">
+                <Box>
+                  <Text fontSize="xs" color="gray.400" textTransform="uppercase" fontWeight="bold">Students</Text>
+                  <Text fontWeight="bold">{course.students}</Text>
+                </Box>
+                <Button size="sm" variant="ghost" colorPalette="blue">View Details</Button>
+              </Flex>
+            </Card.Body>
+          </Card.Root>
+        )) : (
+          <GridItem colSpan={3}>
+            <Text color="gray.500" textAlign="center" py={10}>No courses assigned to you.</Text>
+          </GridItem>
+        )}
+      </Grid>
+    </Stack>
+  )
+}
+
 const Curriculum = () => {
   const [user, setUser] = useState(null)
 
@@ -132,11 +189,15 @@ const Curriculum = () => {
 
   if (!user) return <Layout>Loading...</Layout>
 
+  const rid = user.role_id ? Number(user.role_id) : null
+  const isFaculty = user.faculty_id !== null && user.faculty_id !== undefined
+  const isStudent = user.student_id !== null && user.student_id !== undefined
+
   return (
     <Layout>
-      {user.role_id === 1 && <StudentCurriculum user={user} />}
-      {user.role_id === 2 && <StudentCurriculum user={user} />} {/* Faculty view similar to student for now */}
-      {user.role_id === 3 && <AdminCurriculum user={user} />}
+      {isStudent && <StudentCurriculum user={user} />}
+      {isFaculty && !isStudent && <FacultyCurriculum user={user} />}
+      {!isStudent && !isFaculty && rid === 3 && <AdminCurriculum user={user} />}
     </Layout>
   )
 }

@@ -152,10 +152,14 @@ const Results = () => {
 
   if (!user) return <Layout>Loading...</Layout>
 
+  const rid = user.role_id ? Number(user.role_id) : null
+  const isFaculty = user.faculty_id !== null && user.faculty_id !== undefined
+  const isStudent = user.student_id !== null && user.student_id !== undefined
+
   return (
     <Layout>
-      {user.role_id === 1 && <StudentResults user={user} />}
-      {(user.role_id === 2 || user.role_id === 3) && <FacultyResults user={user} />}
+      {isStudent && <StudentResults user={user} />}
+      {(isFaculty || rid === 3) && <FacultyResults user={user} />}
     </Layout>
   )
 }
