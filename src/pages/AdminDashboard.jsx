@@ -1,20 +1,56 @@
 import { useCallback, useEffect, useState } from 'react';
+import {
+  LayoutDashboard,
+  Building2,
+  MapPin,
+  School,
+  BookMarked,
+  Layers,
+  BookOpen,
+  CalendarRange,
+  LayoutList,
+  Users,
+  UserCog,
+  ClipboardList,
+  UserPlus,
+} from 'lucide-react';
 import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from '../api';
 import { getToken } from '../auth';
 import { Button, Field, Input } from '../components/FormParts';
 
-const TABS = [
-  { id: 'university', label: 'Universities', path: '/api/admin/universities' },
-  { id: 'campus', label: 'Campuses', path: '/api/admin/campuses' },
-  { id: 'school', label: 'Schools', path: '/api/admin/schools' },
-  { id: 'program', label: 'Programs', path: '/api/admin/programs' },
-  { id: 'batch', label: 'Batches', path: '/api/admin/batches' },
+const NAV_ITEMS = [
+  { id: 'dashboard', label: 'Dashboard', path: null },
+  { id: 'university', label: 'University', path: '/api/admin/universities' },
+  { id: 'campus', label: 'Campus', path: '/api/admin/campuses' },
+  { id: 'school', label: 'School', path: '/api/admin/schools' },
+  { id: 'program', label: 'Program', path: '/api/admin/programs' },
+  { id: 'batch', label: 'Batch', path: '/api/admin/batches' },
   { id: 'courseGroup', label: 'Course groups', path: '/api/admin/course-groups' },
   { id: 'course', label: 'Courses', path: '/api/admin/courses' },
   { id: 'offering', label: 'Offerings', path: '/api/admin/course-offerings' },
   { id: 'section', label: 'Sections', path: '/api/admin/course-sections' },
+  { id: 'facultyMapping', label: 'Faculty mapping', path: null },
+  { id: 'enrollments', label: 'Enrollments', path: null },
+  { id: 'attendance', label: 'Attendance', path: null },
   { id: 'students', label: 'Student links', path: '/api/admin/students' },
 ];
+
+const NAV_ICONS = {
+  dashboard: LayoutDashboard,
+  university: Building2,
+  campus: MapPin,
+  school: School,
+  program: BookMarked,
+  batch: Layers,
+  courseGroup: BookOpen,
+  course: BookOpen,
+  offering: CalendarRange,
+  section: LayoutList,
+  facultyMapping: UserCog,
+  enrollments: UserPlus,
+  attendance: ClipboardList,
+  students: Users,
+};
 
 function TableShell({ children }) {
   return (
@@ -41,11 +77,14 @@ export default function AdminDashboard() {
     courseGroups: [],
     courses: [],
     offerings: [],
+    sections: [],
+    faculty: [],
+    studentsList: [],
   });
 
   const loadLookups = useCallback(async () => {
     try {
-      const [u, c, s, p, b, cg, cr, of] = await Promise.all([
+      const [u, c, s, p, b, cg, cr, of, sec, fac, st] = await Promise.all([
         apiGet('/api/admin/universities', { token }),
         apiGet('/api/admin/campuses', { token }),
         apiGet('/api/admin/schools', { token }),
@@ -54,6 +93,9 @@ export default function AdminDashboard() {
         apiGet('/api/admin/course-groups', { token }),
         apiGet('/api/admin/courses', { token }),
         apiGet('/api/admin/course-offerings', { token }),
+        apiGet('/api/admin/course-sections', { token }),
+        apiGet('/api/admin/faculty', { token }),
+        apiGet('/api/admin/students', { token }),
       ]);
       setLookup({
         universities: u.items || [],
@@ -64,6 +106,9 @@ export default function AdminDashboard() {
         courseGroups: cg.items || [],
         courses: cr.items || [],
         offerings: of.items || [],
+        sections: sec.items || [],
+        faculty: fac.items || [],
+        studentsList: st.items || [],
       });
     } catch {
       /* optional for partial UI */
@@ -77,8 +122,19 @@ export default function AdminDashboard() {
       if (tab === 'students') {
         const d = await apiGet('/api/admin/students', { token });
         setItems(d.items || []);
+      } else if (tab === 'dashboard') {
+        setItems([]);
+      } else if (tab === 'facultyMapping') {
+        const d = await apiGet('/api/admin/faculty-mappings', { token });
+        setItems(d.items || []);
+      } else if (tab === 'enrollments') {
+        const d = await apiGet('/api/admin/student-enrollments', { token });
+        setItems(d.items || []);
+      } else if (tab === 'attendance') {
+        const d = await apiGet('/api/admin/attendance-summary', { token });
+        setItems(d.items || []);
       } else {
-        const t = TABS.find((x) => x.id === tab);
+        const t = NAV_ITEMS.find((x) => x.id === tab);
         const d = await apiGet(t.path, { token });
         setItems(d.items || []);
       }
@@ -105,42 +161,70 @@ export default function AdminDashboard() {
     }
   }
 
-  const path = TABS.find((x) => x.id === tab)?.path || '';
+  const path = NAV_ITEMS.find((x) => x.id === tab)?.path || '';
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Administration</h1>
-        <p className="mt-1 text-sm text-slate-600">
-          Manage academic structure and student affiliations. All changes require an admin session.
-        </p>
-      </div>
+    <div className="flex min-h-[calc(100vh-8rem)] gap-0 lg:gap-8">
+      <aside className="hidden w-56 shrink-0 border-r border-slate-200 bg-slate-50/80 pr-4 lg:block">
+        <div className="sticky top-4 space-y-1 pt-1">
+          <p className="px-3 pb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Admin</p>
+          {NAV_ITEMS.map((t) => {
+            const Icon = NAV_ICONS[t.id] || LayoutDashboard;
+            return (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setTab(t.id)}
+                className={[
+                  'flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors',
+                  tab === t.id
+                    ? 'bg-slate-900 text-white shadow-sm'
+                    : 'text-slate-700 hover:bg-white hover:ring-1 hover:ring-slate-200',
+                ].join(' ')}
+              >
+                <Icon className="h-4 w-4 shrink-0 opacity-90" aria-hidden />
+                {t.label}
+              </button>
+            );
+          })}
+        </div>
+      </aside>
 
-      <div className="flex flex-wrap gap-2 border-b border-slate-200 pb-2">
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            onClick={() => setTab(t.id)}
-            className={[
-              'rounded-lg px-3 py-1.5 text-sm font-medium transition-colors',
-              tab === t.id
-                ? 'bg-slate-900 text-white'
-                : 'bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50',
-            ].join(' ')}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <div className="min-w-0 flex-1 space-y-6">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Administration</h1>
+          <p className="mt-1 text-sm text-slate-600">
+            Academic hierarchy, faculty mapping, enrollments, and attendance. All changes require an admin session.
+          </p>
+        </div>
 
-      {error ? (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
-      ) : null}
+        <div className="flex flex-wrap gap-2 border-b border-slate-200 pb-2 lg:hidden">
+          {NAV_ITEMS.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => setTab(t.id)}
+              className={[
+                'rounded-lg px-3 py-1.5 text-xs font-medium transition-colors',
+                tab === t.id
+                  ? 'bg-slate-900 text-white'
+                  : 'bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50',
+              ].join(' ')}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
 
-      {loading ? <p className="text-sm text-slate-500">Loading…</p> : null}
+        {error ? (
+          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
+        ) : null}
 
-      {tab === 'university' ? (
+        {loading ? <p className="text-sm text-slate-500">Loading…</p> : null}
+
+        {tab === 'dashboard' ? <DashboardPanel token={token} /> : null}
+
+        {tab === 'university' ? (
         <UniversityPanel items={items} path={path} token={token} onDone={refresh} onDelete={removeRow} />
       ) : null}
       {tab === 'campus' ? (
@@ -178,6 +262,7 @@ export default function AdminDashboard() {
           items={items}
           path={path}
           token={token}
+          schools={lookup.schools}
           programs={lookup.programs}
           onDone={refresh}
           onDelete={removeRow}
@@ -199,6 +284,8 @@ export default function AdminDashboard() {
           items={items}
           path={path}
           token={token}
+          schools={lookup.schools}
+          programs={lookup.programs}
           courseGroups={lookup.courseGroups}
           onDone={refresh}
           onDelete={removeRow}
@@ -209,6 +296,9 @@ export default function AdminDashboard() {
           items={items}
           path={path}
           token={token}
+          schools={lookup.schools}
+          programs={lookup.programs}
+          courseGroups={lookup.courseGroups}
           courses={lookup.courses}
           batches={lookup.batches}
           onDone={refresh}
@@ -220,19 +310,328 @@ export default function AdminDashboard() {
           items={items}
           path={path}
           token={token}
+          schools={lookup.schools}
+          programs={lookup.programs}
+          courseGroups={lookup.courseGroups}
+          courses={lookup.courses}
+          batches={lookup.batches}
           offerings={lookup.offerings}
           onDone={refresh}
           onDelete={removeRow}
         />
       ) : null}
-      {tab === 'students' ? (
-        <StudentsPanel
-          items={items}
-          token={token}
-          lookup={lookup}
-          onDone={refresh}
-        />
-      ) : null}
+        {tab === 'facultyMapping' ? (
+          <FacultyMappingPanel items={items} token={token} lookup={lookup} onDone={refresh} />
+        ) : null}
+        {tab === 'enrollments' ? (
+          <EnrollmentsAdminPanel items={items} token={token} lookup={lookup} onDone={refresh} />
+        ) : null}
+        {tab === 'attendance' ? <AttendanceAdminPanel items={items} /> : null}
+        {tab === 'students' ? (
+          <StudentsPanel items={items} token={token} lookup={lookup} onDone={refresh} />
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function DashboardPanel({ token }) {
+  const [stats, setStats] = useState(null);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const [u, s, st, f] = await Promise.all([
+          apiGet('/api/admin/universities', { token }),
+          apiGet('/api/admin/schools', { token }),
+          apiGet('/api/admin/students', { token }),
+          apiGet('/api/admin/faculty', { token }),
+        ]);
+        if (!cancelled) {
+          setStats({
+            universities: (u.items || []).length,
+            schools: (s.items || []).length,
+            students: (st.items || []).length,
+            faculty: (f.items || []).length,
+          });
+        }
+      } catch {
+        if (!cancelled) setStats(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
+  const cards = [
+    { label: 'Universities', value: stats?.universities ?? '—' },
+    { label: 'Schools', value: stats?.schools ?? '—' },
+    { label: 'Students', value: stats?.students ?? '—' },
+    { label: 'Faculty', value: stats?.faculty ?? '—' },
+  ];
+  return (
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {cards.map((c) => (
+        <div key={c.label} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{c.label}</p>
+          <p className="mt-2 text-3xl font-semibold text-slate-900">{c.value}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function FacultyMappingPanel({ items, token, lookup, onDone }) {
+  const empty = { course_section_id: '', faculty_id: '', role: 'primary' };
+  const [form, setForm] = useState(empty);
+  const [err, setErr] = useState('');
+
+  async function submit(e) {
+    e.preventDefault();
+    setErr('');
+    try {
+      await apiPost(
+        '/api/admin/faculty-mappings',
+        {
+          course_section_id: Number(form.course_section_id),
+          faculty_id: Number(form.faculty_id),
+          role: form.role,
+        },
+        { token }
+      );
+      setForm(empty);
+      onDone();
+    } catch (e2) {
+      setErr(e2.message || 'Failed');
+    }
+  }
+
+  async function remove(id) {
+    if (!window.confirm('Remove this mapping?')) return;
+    try {
+      await apiDelete(`/api/admin/faculty-mappings/${id}`, { token });
+      onDone();
+    } catch (e2) {
+      setErr(e2.message || 'Delete failed');
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      <form onSubmit={submit} className="grid gap-4 rounded-xl border border-slate-200 bg-white p-4 sm:grid-cols-2">
+        <div className="sm:col-span-2 text-sm font-medium text-slate-700">Map faculty to a section</div>
+        {err ? (
+          <div className="sm:col-span-2 rounded-md border border-red-200 bg-red-50 p-2 text-sm text-red-700">{err}</div>
+        ) : null}
+        <Field label="Section *">
+          <select
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            value={form.course_section_id}
+            onChange={(e) => setForm({ ...form, course_section_id: e.target.value })}
+            required
+          >
+            <option value="">Select…</option>
+            {lookup.sections.map((sec) => (
+              <option key={sec.id} value={sec.id}>
+                {sec.course_code} · {sec.section_name} · {sec.joining_year} ({sec.program_name})
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Faculty *">
+          <select
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            value={form.faculty_id}
+            onChange={(e) => setForm({ ...form, faculty_id: e.target.value })}
+            required
+          >
+            <option value="">Select…</option>
+            {lookup.faculty.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.name} ({f.faculty_code})
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Role *">
+          <select
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            value={form.role}
+            onChange={(e) => setForm({ ...form, role: e.target.value })}
+          >
+            <option value="primary">primary</option>
+            <option value="co_faculty">co_faculty</option>
+          </select>
+        </Field>
+        <div className="sm:col-span-2">
+          <Button type="submit">Add mapping</Button>
+        </div>
+      </form>
+      <TableShell>
+        <thead className="bg-slate-50 text-xs font-semibold uppercase text-slate-500">
+          <tr>
+            <th className="px-4 py-2">Faculty</th>
+            <th className="px-4 py-2">Section</th>
+            <th className="px-4 py-2">Course</th>
+            <th className="px-4 py-2">Role</th>
+            <th className="px-4 py-2" />
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-100">
+          {items.map((r) => (
+            <tr key={r.id}>
+              <td className="px-4 py-2">{r.faculty_name}</td>
+              <td className="px-4 py-2 font-medium">{r.section_name}</td>
+              <td className="px-4 py-2 text-slate-600">{r.course_code}</td>
+              <td className="px-4 py-2 capitalize">{r.role}</td>
+              <td className="px-4 py-2 text-right">
+                <button type="button" className="text-red-600 hover:underline" onClick={() => remove(r.id)}>
+                  Remove
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </TableShell>
+    </div>
+  );
+}
+
+function EnrollmentsAdminPanel({ items, token, lookup, onDone }) {
+  const empty = { student_id: '', course_section_id: '' };
+  const [form, setForm] = useState(empty);
+  const [err, setErr] = useState('');
+
+  async function submit(e) {
+    e.preventDefault();
+    setErr('');
+    try {
+      await apiPost(
+        '/api/admin/student-enrollments',
+        {
+          student_id: Number(form.student_id),
+          course_section_id: Number(form.course_section_id),
+        },
+        { token }
+      );
+      setForm(empty);
+      onDone();
+    } catch (e2) {
+      setErr(e2.message || 'Failed');
+    }
+  }
+
+  async function remove(id) {
+    if (!window.confirm('Remove enrollment?')) return;
+    try {
+      await apiDelete(`/api/admin/student-enrollments/${id}`, { token });
+      onDone();
+    } catch (e2) {
+      setErr(e2.message || 'Delete failed');
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      <p className="text-sm text-slate-600">
+        Manual enrollments for minors and electives. Core courses are filled automatically when student affiliation is
+        saved.
+      </p>
+      <form onSubmit={submit} className="grid gap-4 rounded-xl border border-slate-200 bg-white p-4 sm:grid-cols-2">
+        {err ? (
+          <div className="sm:col-span-2 rounded-md border border-red-200 bg-red-50 p-2 text-sm text-red-700">{err}</div>
+        ) : null}
+        <Field label="Student *">
+          <select
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            value={form.student_id}
+            onChange={(e) => setForm({ ...form, student_id: e.target.value })}
+            required
+          >
+            <option value="">Select…</option>
+            {lookup.studentsList.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name} ({s.usn})
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Section *">
+          <select
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            value={form.course_section_id}
+            onChange={(e) => setForm({ ...form, course_section_id: e.target.value })}
+            required
+          >
+            <option value="">Select…</option>
+            {lookup.sections.map((sec) => (
+              <option key={sec.id} value={sec.id}>
+                {sec.course_code} · {sec.section_name} · batch {sec.joining_year}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <div className="sm:col-span-2">
+          <Button type="submit">Enroll</Button>
+        </div>
+      </form>
+      <TableShell>
+        <thead className="bg-slate-50 text-xs font-semibold uppercase text-slate-500">
+          <tr>
+            <th className="px-4 py-2">Student</th>
+            <th className="px-4 py-2">Section</th>
+            <th className="px-4 py-2">Course</th>
+            <th className="px-4 py-2" />
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-100">
+          {items.map((r) => (
+            <tr key={r.id}>
+              <td className="px-4 py-2">
+                <div className="font-medium">{r.student_name}</div>
+                <div className="font-mono text-xs text-slate-500">{r.usn}</div>
+              </td>
+              <td className="px-4 py-2">{r.section_name}</td>
+              <td className="px-4 py-2 text-slate-600">{r.course_code}</td>
+              <td className="px-4 py-2 text-right">
+                <button type="button" className="text-red-600 hover:underline" onClick={() => remove(r.id)}>
+                  Remove
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </TableShell>
+    </div>
+  );
+}
+
+function AttendanceAdminPanel({ items }) {
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-slate-600">Aggregated attendance from the attendance_summary view (per student / section).</p>
+      <TableShell>
+        <thead className="bg-slate-50 text-xs font-semibold uppercase text-slate-500">
+          <tr>
+            <th className="px-4 py-2">Student ID</th>
+            <th className="px-4 py-2">Section ID</th>
+            <th className="px-4 py-2">Total</th>
+            <th className="px-4 py-2">Attended</th>
+            <th className="px-4 py-2">%</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-100">
+          {items.map((r) => (
+            <tr key={`${r.student_id}-${r.course_section_id}`}>
+              <td className="px-4 py-2 font-mono text-xs">{r.student_id}</td>
+              <td className="px-4 py-2 font-mono text-xs">{r.course_section_id}</td>
+              <td className="px-4 py-2">{r.total_classes}</td>
+              <td className="px-4 py-2">{r.attended}</td>
+              <td className="px-4 py-2">{r.percentage}</td>
+            </tr>
+          ))}
+        </tbody>
+      </TableShell>
     </div>
   );
 }
@@ -642,14 +1041,22 @@ function ProgramPanel({ items, path, token, schools, onDone, onDelete }) {
   );
 }
 
-function BatchPanel({ items, path, token, programs, onDone, onDelete }) {
-  const empty = { program_id: '', joining_year: new Date().getFullYear() };
+function BatchPanel({ items, path, token, schools, programs, onDone, onDelete }) {
+  const empty = { school_id: '', program_id: '', joining_year: new Date().getFullYear() };
   const [form, setForm] = useState(empty);
   const [editingId, setEditingId] = useState(null);
 
+  const programsForSchool = (schoolId) =>
+    !schoolId ? [] : programs.filter((p) => p.school_id === Number(schoolId));
+
   function startEdit(r) {
+    const prog = programs.find((p) => p.id === r.program_id);
     setEditingId(r.id);
-    setForm({ program_id: String(r.program_id), joining_year: r.joining_year });
+    setForm({
+      school_id: prog ? String(prog.school_id) : '',
+      program_id: String(r.program_id),
+      joining_year: r.joining_year,
+    });
   }
 
   function cancelEdit() {
@@ -668,10 +1075,26 @@ function BatchPanel({ items, path, token, programs, onDone, onDelete }) {
 
   return (
     <div className="space-y-6">
+      <p className="text-sm text-slate-600">Hierarchy: School → Program → batch year.</p>
       <form onSubmit={submit} className="grid gap-4 rounded-xl border border-slate-200 bg-white p-4 sm:grid-cols-2">
         <div className="sm:col-span-2 text-sm font-medium text-slate-700">
           {editingId ? `Editing #${editingId}` : 'New record'}
         </div>
+        <Field label="School *">
+          <select
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            value={form.school_id}
+            onChange={(e) => setForm({ ...form, school_id: e.target.value, program_id: '' })}
+            required
+          >
+            <option value="">Select…</option>
+            {schools.map((sch) => (
+              <option key={sch.id} value={sch.id}>
+                {sch.name}
+              </option>
+            ))}
+          </select>
+        </Field>
         <Field label="Program *">
           <select
             className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
@@ -680,9 +1103,9 @@ function BatchPanel({ items, path, token, programs, onDone, onDelete }) {
             required
           >
             <option value="">Select…</option>
-            {programs.map((p) => (
+            {programsForSchool(form.school_id).map((p) => (
               <option key={p.id} value={p.id}>
-                {p.name} ({p.school_name})
+                {p.name}
               </option>
             ))}
           </select>
@@ -779,7 +1202,7 @@ function CourseGroupPanel({ items, path, token, schools, programs, onDone, onDel
           <select
             className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
             value={form.school_id}
-            onChange={(e) => setForm({ ...form, school_id: e.target.value })}
+            onChange={(e) => setForm({ ...form, school_id: e.target.value, program_id: '' })}
             required
           >
             <option value="">Select…</option>
@@ -795,13 +1218,16 @@ function CourseGroupPanel({ items, path, token, schools, programs, onDone, onDel
             className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
             value={form.program_id}
             onChange={(e) => setForm({ ...form, program_id: e.target.value })}
+            disabled={!form.school_id}
           >
             <option value="">None (school-wide)</option>
-            {programs.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
+            {programs
+              .filter((p) => !form.school_id || p.school_id === Number(form.school_id))
+              .map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
           </select>
         </Field>
         <Field label="Name *">
@@ -862,8 +1288,10 @@ function CourseGroupPanel({ items, path, token, schools, programs, onDone, onDel
   );
 }
 
-function CoursePanel({ items, path, token, courseGroups, onDone, onDelete }) {
+function CoursePanel({ items, path, token, schools, programs, courseGroups, onDone, onDelete }) {
   const empty = {
+    school_id: '',
+    program_id: '',
     course_group_id: '',
     course_name: '',
     course_code: '',
@@ -875,9 +1303,18 @@ function CoursePanel({ items, path, token, courseGroups, onDone, onDelete }) {
   const [form, setForm] = useState(empty);
   const [editingId, setEditingId] = useState(null);
 
+  const groupsFiltered = courseGroups.filter((g) => {
+    if (!form.school_id || g.school_id !== Number(form.school_id)) return false;
+    if (!form.program_id) return true;
+    return g.program_id == null || g.program_id === Number(form.program_id);
+  });
+
   function startEdit(r) {
+    const g = courseGroups.find((x) => x.id === r.course_group_id);
     setEditingId(r.id);
     setForm({
+      school_id: g ? String(g.school_id) : '',
+      program_id: g && g.program_id != null ? String(g.program_id) : '',
       course_group_id: String(r.course_group_id),
       course_name: r.course_name || '',
       course_code: r.course_code || '',
@@ -912,6 +1349,7 @@ function CoursePanel({ items, path, token, courseGroups, onDone, onDelete }) {
 
   return (
     <div className="space-y-6">
+      <p className="text-sm text-slate-600">Hierarchy: School → Program → Course group → course details.</p>
       <form
         onSubmit={submit}
         className="grid gap-4 rounded-xl border border-slate-200 bg-white p-4 sm:grid-cols-2 lg:grid-cols-3"
@@ -919,15 +1357,50 @@ function CoursePanel({ items, path, token, courseGroups, onDone, onDelete }) {
         <div className="sm:col-span-2 text-sm font-medium text-slate-700 lg:col-span-3">
           {editingId ? `Editing #${editingId}` : 'New record'}
         </div>
+        <Field label="School *">
+          <select
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            value={form.school_id}
+            onChange={(e) =>
+              setForm({ ...form, school_id: e.target.value, program_id: '', course_group_id: '' })
+            }
+            required
+          >
+            <option value="">Select…</option>
+            {schools.map((sch) => (
+              <option key={sch.id} value={sch.id}>
+                {sch.name}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Program (filter)">
+          <select
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            value={form.program_id}
+            onChange={(e) => setForm({ ...form, program_id: e.target.value, course_group_id: '' })}
+            disabled={!form.school_id}
+          >
+            <option value="">Any / school-wide groups</option>
+            {programs
+              .filter((p) => p.school_id === Number(form.school_id))
+              .map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+          </select>
+        </Field>
         <Field label="Course group *">
           <select
             className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
             value={form.course_group_id}
             onChange={(e) => setForm({ ...form, course_group_id: e.target.value })}
             required
+            disabled={!form.school_id}
           >
             <option value="">Select…</option>
-            {courseGroups.map((g) => (
+            {groupsFiltered.map((g) => (
               <option key={g.id} value={g.id}>
                 {g.name} ({g.track})
               </option>
@@ -994,14 +1467,51 @@ function CoursePanel({ items, path, token, courseGroups, onDone, onDelete }) {
   );
 }
 
-function OfferingPanel({ items, path, token, courses, batches, onDone, onDelete }) {
-  const empty = { course_id: '', batch_id: '' };
+function OfferingPanel({
+  items,
+  path,
+  token,
+  schools,
+  programs,
+  courseGroups,
+  courses,
+  batches,
+  onDone,
+  onDelete,
+}) {
+  const empty = {
+    school_id: '',
+    program_id: '',
+    course_group_id: '',
+    course_id: '',
+    batch_id: '',
+  };
   const [form, setForm] = useState(empty);
   const [editingId, setEditingId] = useState(null);
 
+  const coursesFiltered = courses.filter((c) => {
+    if (!form.course_group_id) return false;
+    return c.course_group_id === Number(form.course_group_id);
+  });
+
+  const batchesFiltered = batches.filter((b) => {
+    if (!form.program_id) return false;
+    return b.program_id === Number(form.program_id);
+  });
+
   function startEdit(r) {
+    const crs = courses.find((c) => c.id === r.course_id);
+    const cg = crs ? courseGroups.find((g) => g.id === crs.course_group_id) : null;
+    const bat = batches.find((b) => b.id === r.batch_id);
+    const prog = bat ? programs.find((p) => p.id === bat.program_id) : null;
     setEditingId(r.id);
-    setForm({ course_id: String(r.course_id), batch_id: String(r.batch_id) });
+    setForm({
+      school_id: prog ? String(prog.school_id) : '',
+      program_id: bat ? String(bat.program_id) : '',
+      course_group_id: cg ? String(cg.id) : '',
+      course_id: String(r.course_id),
+      batch_id: String(r.batch_id),
+    });
   }
 
   function cancelEdit() {
@@ -1020,19 +1530,92 @@ function OfferingPanel({ items, path, token, courses, batches, onDone, onDelete 
 
   return (
     <div className="space-y-6">
-      <form onSubmit={submit} className="grid gap-4 rounded-xl border border-slate-200 bg-white p-4 sm:grid-cols-2">
-        <div className="sm:col-span-2 text-sm font-medium text-slate-700">
+      <p className="text-sm text-slate-600">
+        Full chain: School → Program → Course group → Course → Batch (same program). Server validates program alignment.
+      </p>
+      <form
+        onSubmit={submit}
+        className="grid gap-4 rounded-xl border border-slate-200 bg-white p-4 sm:grid-cols-2 lg:grid-cols-3"
+      >
+        <div className="sm:col-span-2 text-sm font-medium text-slate-700 lg:col-span-3">
           {editingId ? `Editing #${editingId}` : 'New record'}
         </div>
+        <Field label="School *">
+          <select
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            value={form.school_id}
+            onChange={(e) =>
+              setForm({
+                ...form,
+                school_id: e.target.value,
+                program_id: '',
+                course_group_id: '',
+                course_id: '',
+                batch_id: '',
+              })
+            }
+            required
+          >
+            <option value="">Select…</option>
+            {schools.map((sch) => (
+              <option key={sch.id} value={sch.id}>
+                {sch.name}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Program *">
+          <select
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            value={form.program_id}
+            onChange={(e) =>
+              setForm({ ...form, program_id: e.target.value, course_group_id: '', course_id: '', batch_id: '' })
+            }
+            required
+            disabled={!form.school_id}
+          >
+            <option value="">Select…</option>
+            {programs
+              .filter((p) => p.school_id === Number(form.school_id))
+              .map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+          </select>
+        </Field>
+        <Field label="Course group *">
+          <select
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            value={form.course_group_id}
+            onChange={(e) => setForm({ ...form, course_group_id: e.target.value, course_id: '' })}
+            required
+            disabled={!form.program_id}
+          >
+            <option value="">Select…</option>
+            {courseGroups
+              .filter(
+                (g) =>
+                  g.school_id === Number(form.school_id) &&
+                  (g.program_id == null || g.program_id === Number(form.program_id))
+              )
+              .map((g) => (
+                <option key={g.id} value={g.id}>
+                  {g.name} ({g.track})
+                </option>
+              ))}
+          </select>
+        </Field>
         <Field label="Course *">
           <select
             className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
             value={form.course_id}
             onChange={(e) => setForm({ ...form, course_id: e.target.value })}
             required
+            disabled={!form.course_group_id}
           >
             <option value="">Select…</option>
-            {courses.map((c) => (
+            {coursesFiltered.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.course_code} — {c.course_name}
               </option>
@@ -1045,16 +1628,17 @@ function OfferingPanel({ items, path, token, courses, batches, onDone, onDelete 
             value={form.batch_id}
             onChange={(e) => setForm({ ...form, batch_id: e.target.value })}
             required
+            disabled={!form.program_id}
           >
             <option value="">Select…</option>
-            {batches.map((b) => (
+            {batchesFiltered.map((b) => (
               <option key={b.id} value={b.id}>
                 {b.joining_year} — {b.program_name}
               </option>
             ))}
           </select>
         </Field>
-        <div className="flex flex-wrap gap-2 sm:col-span-2">
+        <div className="flex flex-wrap gap-2 sm:col-span-2 lg:col-span-3">
           <Button type="submit">{editingId ? 'Save changes' : 'Add offering'}</Button>
           {editingId ? (
             <button type="button" className="rounded-md border border-slate-300 px-4 py-2 text-sm" onClick={cancelEdit}>
@@ -1098,14 +1682,63 @@ function OfferingPanel({ items, path, token, courses, batches, onDone, onDelete 
   );
 }
 
-function SectionPanel({ items, path, token, offerings, onDone, onDelete }) {
-  const empty = { course_offering_id: '', section_name: '' };
+function SectionPanel({
+  items,
+  path,
+  token,
+  schools,
+  programs,
+  courseGroups,
+  courses,
+  batches,
+  offerings,
+  onDone,
+  onDelete,
+}) {
+  const empty = {
+    school_id: '',
+    program_id: '',
+    course_group_id: '',
+    course_id: '',
+    batch_id: '',
+    course_offering_id: '',
+    section_name: '',
+  };
   const [form, setForm] = useState(empty);
   const [editingId, setEditingId] = useState(null);
 
+  const offeringsFiltered = offerings.filter((o) => {
+    if (form.course_id && Number(form.course_id) !== o.course_id) return false;
+    if (form.batch_id && Number(form.batch_id) !== o.batch_id) return false;
+    return true;
+  });
+
+  const coursesFiltered = courses.filter((c) => {
+    if (!form.course_group_id) return false;
+    return c.course_group_id === Number(form.course_group_id);
+  });
+
+  const batchesFiltered = batches.filter((b) => {
+    if (!form.program_id) return false;
+    return b.program_id === Number(form.program_id);
+  });
+
   function startEdit(r) {
+    const off = offerings.find((o) => o.id === r.course_offering_id);
+    const crs = off ? courses.find((c) => c.id === off.course_id) : null;
+    const cg = crs ? courseGroups.find((g) => g.id === crs.course_group_id) : null;
+    const bat = off ? batches.find((b) => b.id === off.batch_id) : null;
+    const prog = bat ? programs.find((p) => p.id === bat.program_id) : null;
     setEditingId(r.id);
-    setForm({ course_offering_id: String(r.course_offering_id), section_name: r.section_name || '' });
+    setForm({
+      school_id: prog ? String(prog.school_id) : '',
+      program_id: bat ? String(bat.program_id) : '',
+      course_group_id: cg ? String(cg.id) : '',
+      course_id: off ? String(off.course_id) : '',
+      batch_id: off ? String(off.batch_id) : '',
+      course_offering_id: String(r.course_offering_id),
+      section_name: r.section_name || '',
+    });
   }
 
   function cancelEdit() {
@@ -1124,19 +1757,138 @@ function SectionPanel({ items, path, token, offerings, onDone, onDelete }) {
 
   return (
     <div className="space-y-6">
-      <form onSubmit={submit} className="grid gap-4 rounded-xl border border-slate-200 bg-white p-4 sm:grid-cols-2">
-        <div className="sm:col-span-2 text-sm font-medium text-slate-700">
+      <p className="text-sm text-slate-600">
+        Hierarchy through School → Program → Course group → Course → Batch, then pick the matching offering and section
+        name.
+      </p>
+      <form
+        onSubmit={submit}
+        className="grid gap-4 rounded-xl border border-slate-200 bg-white p-4 sm:grid-cols-2 lg:grid-cols-3"
+      >
+        <div className="sm:col-span-2 text-sm font-medium text-slate-700 lg:col-span-3">
           {editingId ? `Editing #${editingId}` : 'New record'}
         </div>
+        <Field label="School *">
+          <select
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            value={form.school_id}
+            onChange={(e) =>
+              setForm({
+                ...empty,
+                school_id: e.target.value,
+              })
+            }
+            required
+          >
+            <option value="">Select…</option>
+            {schools.map((sch) => (
+              <option key={sch.id} value={sch.id}>
+                {sch.name}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Program *">
+          <select
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            value={form.program_id}
+            onChange={(e) =>
+              setForm({
+                ...form,
+                program_id: e.target.value,
+                course_group_id: '',
+                course_id: '',
+                batch_id: '',
+                course_offering_id: '',
+              })
+            }
+            required
+            disabled={!form.school_id}
+          >
+            <option value="">Select…</option>
+            {programs
+              .filter((p) => p.school_id === Number(form.school_id))
+              .map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+          </select>
+        </Field>
+        <Field label="Course group *">
+          <select
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            value={form.course_group_id}
+            onChange={(e) =>
+              setForm({
+                ...form,
+                course_group_id: e.target.value,
+                course_id: '',
+                batch_id: '',
+                course_offering_id: '',
+              })
+            }
+            required
+            disabled={!form.program_id}
+          >
+            <option value="">Select…</option>
+            {courseGroups
+              .filter(
+                (g) =>
+                  g.school_id === Number(form.school_id) &&
+                  (g.program_id == null || g.program_id === Number(form.program_id))
+              )
+              .map((g) => (
+                <option key={g.id} value={g.id}>
+                  {g.name} ({g.track})
+                </option>
+              ))}
+          </select>
+        </Field>
+        <Field label="Course *">
+          <select
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            value={form.course_id}
+            onChange={(e) =>
+              setForm({ ...form, course_id: e.target.value, batch_id: '', course_offering_id: '' })
+            }
+            required
+            disabled={!form.course_group_id}
+          >
+            <option value="">Select…</option>
+            {coursesFiltered.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.course_code} — {c.course_name}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Batch *">
+          <select
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            value={form.batch_id}
+            onChange={(e) => setForm({ ...form, batch_id: e.target.value, course_offering_id: '' })}
+            required
+            disabled={!form.program_id || !form.course_id}
+          >
+            <option value="">Select…</option>
+            {batchesFiltered.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.joining_year} — {b.program_name}
+              </option>
+            ))}
+          </select>
+        </Field>
         <Field label="Offering *">
           <select
             className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
             value={form.course_offering_id}
             onChange={(e) => setForm({ ...form, course_offering_id: e.target.value })}
             required
+            disabled={!form.course_id || !form.batch_id}
           >
             <option value="">Select…</option>
-            {offerings.map((o) => (
+            {offeringsFiltered.map((o) => (
               <option key={o.id} value={o.id}>
                 #{o.id} {o.course_code} / {o.joining_year}
               </option>

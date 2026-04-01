@@ -2,8 +2,10 @@ const KEY = 'campusai_token';
 const ROLE_KEY = 'campusai_role';
 
 export function setAuth({ token, role }) {
-  localStorage.setItem(KEY, token);
-  if (role) localStorage.setItem(ROLE_KEY, role);
+  const t = token != null ? String(token).trim() : '';
+  if (t) localStorage.setItem(KEY, t);
+  else localStorage.removeItem(KEY);
+  if (role) localStorage.setItem(ROLE_KEY, String(role).trim());
 }
 
 export function clearAuth() {
@@ -20,6 +22,6 @@ export function getRole() {
 }
 
 export function isAuthed() {
-  return Boolean(getToken());
+  return getToken().length > 0;
 }
 

@@ -1,4 +1,16 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const RAW_BASE = (import.meta.env.VITE_API_URL || '').trim();
+/** Dev: empty base + Vite proxy → same-origin `/api`, so Authorization is always sent. Prod: set VITE_API_URL. */
+const API_BASE =
+  RAW_BASE ||
+  (import.meta.env.DEV ? '' : 'http://localhost:5000');
+
+function buildUrl(path) {
+  if (path.startsWith('http')) return path;
+  const p = path.startsWith('/') ? path : `/${path}`;
+  if (!API_BASE) return p;
+  const base = API_BASE.endsWith('/') ? API_BASE.slice(0, -1) : API_BASE;
+  return `${base}${p}`;
+}
 
 async function parseBody(res) {
   const text = await res.text();
@@ -22,9 +34,14 @@ function unwrap(data) {
   return data;
 }
 
+function authHeader(token) {
+  const t = token != null ? String(token).trim() : '';
+  return t ? { Authorization: `Bearer ${t}` } : {};
+}
+
 export async function apiGet(path, { token } = {}) {
-  const res = await fetch(`${API_URL}${path}`, {
-    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  const res = await fetch(buildUrl(path), {
+    headers: { ...authHeader(token) },
   });
   const data = await parseBody(res);
   if (!res.ok) throw new Error(data.message || 'Request failed');
@@ -32,9 +49,8 @@ export async function apiGet(path, { token } = {}) {
 }
 
 export async function apiPost(path, body, { token } = {}) {
-  const headers = { 'Content-Type': 'application/json' };
-  if (token) headers.Authorization = `Bearer ${token}`;
-  const res = await fetch(`${API_URL}${path}`, {
+  const headers = { 'Content-Type': 'application/json', ...authHeader(token) };
+  const res = await fetch(buildUrl(path), {
     method: 'POST',
     headers,
     body: JSON.stringify(body || {}),
@@ -45,9 +61,8 @@ export async function apiPost(path, body, { token } = {}) {
 }
 
 export async function apiPut(path, body, { token } = {}) {
-  const headers = { 'Content-Type': 'application/json' };
-  if (token) headers.Authorization = `Bearer ${token}`;
-  const res = await fetch(`${API_URL}${path}`, {
+  const headers = { 'Content-Type': 'application/json', ...authHeader(token) };
+  const res = await fetch(buildUrl(path), {
     method: 'PUT',
     headers,
     body: JSON.stringify(body || {}),
@@ -58,9 +73,8 @@ export async function apiPut(path, body, { token } = {}) {
 }
 
 export async function apiPatch(path, body, { token } = {}) {
-  const headers = { 'Content-Type': 'application/json' };
-  if (token) headers.Authorization = `Bearer ${token}`;
-  const res = await fetch(`${API_URL}${path}`, {
+  const headers = { 'Content-Type': 'application/json', ...authHeader(token) };
+  const res = await fetch(buildUrl(path), {
     method: 'PATCH',
     headers,
     body: JSON.stringify(body || {}),
@@ -71,11 +85,9 @@ export async function apiPatch(path, body, { token } = {}) {
 }
 
 export async function apiDelete(path, { token } = {}) {
-  const headers = {};
-  if (token) headers.Authorization = `Bearer ${token}`;
-  const res = await fetch(`${API_URL}${path}`, {
+  const res = await fetch(buildUrl(path), {
     method: 'DELETE',
-    headers,
+    headers: { ...authHeader(token) },
   });
   const data = await parseBody(res);
   if (!res.ok) throw new Error(data.message || 'Request failed');
