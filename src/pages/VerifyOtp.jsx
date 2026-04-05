@@ -50,23 +50,23 @@ export default function VerifyOtp() {
           <Input value={otp} onChange={(e) => setOtp(e.target.value)} required inputMode="numeric" />
         </Field>
         {!registrationToken ? (
-          <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+          <div className="rounded-lg border border-warning/30 bg-warning/5 p-3 text-sm text-warning">
             Missing registration session. Please start registration again.
           </div>
         ) : null}
         {error ? (
-          <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>
+          <div className="rounded-lg border border-danger/30 bg-danger/5 p-3 text-sm text-danger">{error}</div>
         ) : null}
-        <Button disabled={loading || !registrationToken} className="w-full">
-          {loading ? 'Verifying…' : 'Verify and continue'}
+        <Button loading={loading} disabled={!registrationToken} className="w-full">
+          Verify and continue
         </Button>
       </form>
 
       <div className="mt-6 flex items-center justify-between text-sm">
-        <Link className="font-medium text-slate-700 hover:text-slate-900" to="/login">
+        <Link className="font-medium text-secondary transition-colors hover:text-accent" to="/login">
           Back to sign in
         </Link>
-        <Link className="font-medium text-slate-700 hover:text-slate-900" to="/">
+        <Link className="font-medium text-secondary transition-colors hover:text-accent" to="/">
           Home
         </Link>
       </div>

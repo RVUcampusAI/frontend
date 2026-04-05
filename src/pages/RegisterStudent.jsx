@@ -33,39 +33,36 @@ export default function RegisterStudent() {
   }
 
   return (
-    <Card title="Student Registration" subtitle="We’ll email you an OTP to verify your account.">
+    <Card title="Student Registration" subtitle="We'll email you an OTP to verify your account.">
       <form onSubmit={onSubmit} className="space-y-4">
         <Field label="Full name">
-          <Input value={name} onChange={(e) => setName(e.target.value)} />
+          <Input value={name} onChange={(e) => setName(e.target.value)} required />
         </Field>
         <Field label="USN">
-          <Input value={usn} onChange={(e) => setUsn(e.target.value)} />
+          <Input value={usn} onChange={(e) => setUsn(e.target.value)} required />
         </Field>
         <Field label="Email">
-          <Input value={email} onChange={(e) => setEmail(e.target.value)} />
+          <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
         </Field>
         <Field label="Password">
           <PasswordInput autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
         </Field>
         {error ? (
-          <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-            {error}
-          </div>
+          <div className="rounded-lg border border-danger/30 bg-danger/5 p-3 text-sm text-danger">{error}</div>
         ) : null}
-        <Button disabled={loading} className="w-full">
-          {loading ? 'Sending OTP…' : 'Send OTP'}
+        <Button loading={loading} className="w-full">
+          Send OTP
         </Button>
       </form>
 
       <div className="mt-6 flex items-center justify-between text-sm">
-        <Link className="text-slate-700 hover:text-slate-900" to="/login">
+        <Link className="font-medium text-secondary transition-colors hover:text-accent" to="/login">
           Back to login
         </Link>
-        <Link className="text-slate-700 hover:text-slate-900" to="/register/faculty">
+        <Link className="font-medium text-accent transition-colors hover:text-accent-light" to="/register/faculty">
           Register as faculty
         </Link>
       </div>
     </Card>
   );
 }
-

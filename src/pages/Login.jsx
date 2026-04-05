@@ -54,35 +54,35 @@ export default function Login() {
           />
         </Field>
         {notice ? (
-          <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+          <div className="rounded-lg border border-success/30 bg-success/5 p-3 text-sm text-success">
             {notice}
           </div>
         ) : null}
         {error ? (
-          <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>
+          <div className="rounded-lg border border-danger/30 bg-danger/5 p-3 text-sm text-danger">{error}</div>
         ) : null}
-        <Button disabled={loading} className="w-full">
-          {loading ? 'Signing in…' : 'Sign in'}
+        <Button loading={loading} className="w-full">
+          Sign in
         </Button>
       </form>
 
       <div className="mt-6 flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:justify-between">
-        <Link className="font-medium text-slate-700 hover:text-slate-900" to="/forgot-password">
+        <Link className="font-medium text-secondary transition-colors hover:text-accent" to="/forgot-password">
           Forgot password?
         </Link>
-        <Link className="font-medium text-slate-700 hover:text-slate-900" to="/unlock-account">
+        <Link className="font-medium text-secondary transition-colors hover:text-accent" to="/unlock-account">
           Account locked?
         </Link>
       </div>
 
-      <div className="mt-6 border-t border-slate-100 pt-6">
-        <p className="text-center text-sm text-slate-600">New to CampusAI?</p>
-        <div className="mt-3 flex justify-center gap-4 text-sm font-medium">
-          <Link className="text-slate-700 hover:text-slate-900" to="/register/student">
+      <div className="mt-6 border-t border-border pt-6">
+        <p className="text-center text-sm text-secondary">New to CampusAI?</p>
+        <div className="mt-3 flex justify-center gap-4 text-sm font-semibold">
+          <Link className="text-accent transition-colors hover:text-accent-light" to="/register/student">
             Student registration
           </Link>
-          <span className="text-slate-300">|</span>
-          <Link className="text-slate-700 hover:text-slate-900" to="/register/faculty">
+          <span className="text-border">|</span>
+          <Link className="text-accent transition-colors hover:text-accent-light" to="/register/faculty">
             Faculty registration
           </Link>
         </div>

@@ -39,14 +39,14 @@ export default function ForgotPassword() {
           />
         </Field>
         {error ? (
-          <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>
+          <div className="rounded-lg border border-danger/30 bg-danger/5 p-3 text-sm text-danger">{error}</div>
         ) : null}
-        <Button disabled={loading} className="w-full">
-          {loading ? 'Sending…' : 'Send reset code'}
+        <Button loading={loading} className="w-full">
+          Send reset code
         </Button>
       </form>
       <div className="mt-6 text-center text-sm">
-        <Link className="font-medium text-slate-700 hover:text-slate-900" to="/login">
+        <Link className="font-medium text-secondary transition-colors hover:text-accent" to="/login">
           Back to sign in
         </Link>
       </div>

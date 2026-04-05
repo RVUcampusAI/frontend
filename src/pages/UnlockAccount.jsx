@@ -59,10 +59,10 @@ export default function UnlockAccount() {
             />
           </Field>
           {error ? (
-            <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>
+            <div className="rounded-lg border border-danger/30 bg-danger/5 p-3 text-sm text-danger">{error}</div>
           ) : null}
-          <Button disabled={loading} className="w-full">
-            {loading ? 'Sending…' : 'Send unlock code'}
+          <Button loading={loading} className="w-full">
+            Send unlock code
           </Button>
         </form>
       ) : null}
@@ -70,7 +70,7 @@ export default function UnlockAccount() {
       {step === 'otp' ? (
         <form onSubmit={verify} className="space-y-4">
           {info ? (
-            <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+            <div className="rounded-lg border border-success/30 bg-success/5 p-3 text-sm text-success">
               {info}
             </div>
           ) : null}
@@ -81,22 +81,22 @@ export default function UnlockAccount() {
             <Input value={otp} onChange={(e) => setOtp(e.target.value)} required inputMode="numeric" />
           </Field>
           {error ? (
-            <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>
+            <div className="rounded-lg border border-danger/30 bg-danger/5 p-3 text-sm text-danger">{error}</div>
           ) : null}
-          <Button disabled={loading} className="w-full">
-            {loading ? 'Verifying…' : 'Verify and unlock'}
+          <Button loading={loading} className="w-full">
+            Verify and unlock
           </Button>
         </form>
       ) : null}
 
       {step === 'done' ? (
         <div className="space-y-4">
-          <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+          <div className="rounded-lg border border-success/30 bg-success/5 p-3 text-sm text-success">
             {info}
           </div>
           <Link
             to="/login"
-            className="flex w-full items-center justify-center rounded-md bg-slate-900 py-2 text-sm font-semibold text-white hover:bg-slate-800"
+            className="btn-primary w-full"
           >
             Go to sign in
           </Link>
@@ -104,7 +104,7 @@ export default function UnlockAccount() {
       ) : null}
 
       <div className="mt-6 text-center text-sm">
-        <Link className="font-medium text-slate-700 hover:text-slate-900" to="/login">
+        <Link className="font-medium text-secondary transition-colors hover:text-accent" to="/login">
           Back to sign in
         </Link>
       </div>
